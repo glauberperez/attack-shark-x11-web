@@ -34,7 +34,7 @@ export function PowerPanel({ lighting, battery, deviceBusy }: { lighting: Lighti
 			<Panel title={t('power.deepSleep')} hint={t('power.deepSleepHint')}>
 				<Slider label={t('power.deepSleep')} value={draft.deepSleep} min={1} max={60} unit={t('unit.min')} onChange={(deepSleep) => setDraft({ ...draft, deepSleep })} />
 			</Panel>
-			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={() => run(() => device.applyLighting({ ...lighting, ...draft }))} onReset={reset} />
+			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={() => run(() => device.applyLighting({ ...lighting, ...draft }))} onReset={reset} draftKey={JSON.stringify(draft)} />
 		</>
 	);
 }

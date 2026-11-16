@@ -52,7 +52,7 @@ export function LightingPanel({ lighting, deviceBusy }: { lighting: LightingSett
 					</div>
 				</Panel>
 			)}
-			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={() => run(() => device.applyLighting({ ...lighting, ...draft }))} onReset={reset} />
+			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={() => run(() => device.applyLighting({ ...lighting, ...draft }))} onReset={reset} draftKey={JSON.stringify(draft)} />
 		</>
 	);
 }

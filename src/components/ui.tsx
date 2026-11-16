@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
+import { usePrefs } from '../store';
 
 export function Panel({ title, hint, children, aside }: { title: string; hint?: string; children: ReactNode; aside?: ReactNode }) {
 	return (
@@ -16,17 +17,32 @@ export function Panel({ title, hint, children, aside }: { title: string; hint?: 
 	);
 }
 
-export function ApplyBar({ dirty, busy, onApply, onReset, error }: { dirty: boolean; busy: boolean; onApply: () => void; onReset: () => void; error?: string | null }) {
+export function ApplyBar({ dirty, busy, onApply, onReset, error, manual, draftKey }: { dirty: boolean; busy: boolean; onApply: () => void; onReset: () => void; error?: string | null; manual?: boolean; draftKey?: string }) {
 	const { t } = useI18n();
+	const { autoApply } = usePrefs();
+	const auto = autoApply && !manual;
+	const applyRef = useRef(onApply);
+	const attempted = useRef<string | undefined>(undefined);
+	applyRef.current = onApply;
+	useEffect(() => {
+		if (!auto || !dirty || busy || error || draftKey === undefined || attempted.current === draftKey) return;
+		const id = setTimeout(() => {
+			attempted.current = draftKey;
+			applyRef.current();
+		}, 600);
+		return () => clearTimeout(id);
+	}, [auto, dirty, busy, error, draftKey]);
 	return (
-		<div className={`apply-bar ${dirty ? 'dirty' : ''}`}>
-			<span className={`apply-state ${error ? 'err' : ''}`}>{error ?? (dirty ? t('common.unsaved') : '')}</span>
+		<div className={`apply-bar ${dirty ? 'dirty' : ''} ${auto ? 'auto' : ''}`}>
+			<span className={`apply-state ${error ? 'err' : ''}`}>{error ?? (dirty ? t(auto ? 'common.autoSaving' : 'common.unsaved') : auto ? t('common.autoOn') : '')}</span>
 			<button className="ghost" disabled={!dirty || busy} onClick={onReset}>
 				{t('common.reset')}
 			</button>
-			<button className="primary" disabled={!dirty || busy || Boolean(error)} onClick={onApply}>
-				{busy ? t('common.applying') : t('common.apply')}
-			</button>
+			{!auto && (
+				<button className="primary" disabled={!dirty || busy || Boolean(error)} onClick={onApply}>
+					{busy ? t('common.applying') : t('common.apply')}
+				</button>
+			)}
 		</div>
 	);
 }

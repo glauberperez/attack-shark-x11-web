@@ -11,6 +11,10 @@ import { LightingPanel } from './panels/LightingPanel';
 import { PowerPanel } from './panels/PowerPanel';
 import { BackupPanel } from './panels/BackupPanel';
 import { LogPanel } from './panels/LogPanel';
+import { ButtonsPanel } from './panels/ButtonsPanel';
+import { MacrosPanel } from './panels/MacrosPanel';
+import { PresetsPanel } from './panels/PresetsPanel';
+import { SettingsPanel } from './panels/SettingsPanel';
 import { usePreview } from './device/preview';
 import type { Settings } from './device/codec';
 
@@ -21,13 +25,17 @@ sudo udevadm control --reload-rules && sudo udevadm trigger`;
 const REPO = 'https://github.com/glauberperez/attack-shark-x11-web';
 const UPSTREAM = 'https://github.com/HarukaYamamoto0/attack-shark-x11-driver';
 
-type Tab = 'performance' | 'dpi' | 'lighting' | 'power' | 'backup' | 'log';
+type Tab = 'performance' | 'dpi' | 'lighting' | 'buttons' | 'macros' | 'power' | 'presets' | 'settings' | 'backup' | 'log';
 
 const ICONS: Record<Tab, ReactNode> = {
 	performance: <path d="M4 14a8 8 0 1 1 16 0M12 14l4-5" />,
 	dpi: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />,
 	lighting: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z" />,
+	buttons: <path d="M12 3c-4 0-6 3-6 8v4c0 4 2.7 6 6 6s6-2 6-6v-4c0-5-2-8-6-8ZM12 3v7M6 10h12" />,
+	macros: <path d="M4 6h16v12H4zM7 10h2M11 10h2M15 10h2M8 14h8" />,
 	power: <path d="M3 8h15v8H3zM20 11v2M6 11h6v2H6z" />,
+	presets: <path d="M5 4h14v16l-7-4-7 4z" />,
+	settings: <path d="M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6ZM19 12l2-1-1-3-2 .3-1.3-1.3.3-2-3-1-1 2h-2l-1-2-3 1 .3 2L6 7.3 4 7 3 10l2 1v2l-2 1 1 3 2-.3 1.3 1.3-.3 2 3 1 1-2h2l1 2 3-1-.3-2 1.3-1.3 2 .3 1-3-2-1z" />,
 	backup: <path d="M4 7h16v13H4zM8 4h8v3M9 13l3 3 3-3M12 9v7" />,
 	log: <path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" />,
 };
@@ -168,11 +176,16 @@ function Dashboard({ s }: { s: DeviceState }) {
 				))}
 			</nav>
 			<main className="content">
+				{s.asleep && <div className="alert sleep">{t('conn.asleep')}</div>}
 				{!settings && <div className="loading">{t('conn.connecting')}</div>}
 				{settings && tab === 'performance' && <PerformancePanel settings={settings} deviceBusy={s.busy} />}
 				{settings && tab === 'dpi' && <DpiPanel dpi={settings.dpi} deviceBusy={s.busy} />}
 				{settings && tab === 'lighting' && <LightingPanel lighting={settings.lighting} deviceBusy={s.busy} />}
 				{settings && tab === 'power' && <PowerPanel lighting={settings.lighting} battery={s.battery} deviceBusy={s.busy} />}
+				{settings && tab === 'buttons' && <ButtonsPanel buttons={settings.buttons} deviceBusy={s.busy} />}
+				{settings && tab === 'macros' && <MacrosPanel buttons={settings.buttons} deviceBusy={s.busy} slots={s.macroSlots} />}
+				{tab === 'presets' && <PresetsPanel deviceBusy={s.busy} />}
+				{tab === 'settings' && <SettingsPanel s={s} />}
 				{tab === 'backup' && <BackupPanel deviceBusy={s.busy} />}
 				{tab === 'log' && <LogPanel log={s.log} />}
 			</main>

@@ -20,6 +20,12 @@ export const DPI_MAX = 22000;
 export const DPI_STEP = 50;
 export const STAGE_COUNT = 8;
 
+export enum DpiIndicator {
+	Blink = 1,
+	Static = 2,
+	Off = 3,
+}
+
 export interface DpiStage {
 	enabled: boolean;
 	value: number;
@@ -31,6 +37,7 @@ export interface DpiSettings {
 	current: number;
 	angleSnap: boolean;
 	ripple: boolean;
+	indicator: DpiIndicator;
 }
 
 export enum LightMode {
@@ -53,25 +60,59 @@ export interface LightingSettings {
 	debounce: number;
 }
 
+export type PhysicalButton = 'left' | 'right' | 'middle' | 'dpi' | 'forward' | 'backward' | 'scrollUp' | 'scrollDown';
+
+export const BUTTON_OFFSETS: Record<PhysicalButton, number> = {
+	left: 3,
+	right: 6,
+	middle: 9,
+	dpi: 18,
+	forward: 21,
+	backward: 24,
+	scrollUp: 51,
+	scrollDown: 54,
+};
+
+export const BUTTONS = Object.keys(BUTTON_OFFSETS) as PhysicalButton[];
+
+export interface ButtonBinding {
+	action: number;
+	mod: number;
+	code: number;
+}
+
+export type ButtonSettings = Record<PhysicalButton, ButtonBinding>;
+
+export const DEFAULT_BUTTONS: ButtonSettings = {
+	left: { action: 0x02, mod: 0, code: 0 },
+	right: { action: 0x03, mod: 0, code: 0 },
+	middle: { action: 0x04, mod: 0, code: 0 },
+	dpi: { action: 0x0d, mod: 0, code: 0 },
+	forward: { action: 0x06, mod: 0, code: 0 },
+	backward: { action: 0x05, mod: 0, code: 0 },
+	scrollUp: { action: 0x09, mod: 0, code: 0 },
+	scrollDown: { action: 0x0a, mod: 0, code: 0 },
+};
+
 export interface Settings {
 	polling: PollingRate;
 	dpi: DpiSettings;
 	lighting: LightingSettings;
+	buttons: ButtonSettings;
 }
 
 export type Section = keyof Settings;
 
-export interface RawReports {
-	polling: Uint8Array;
-	dpi: Uint8Array;
-	lighting: Uint8Array;
-}
+export type RawReports = Record<Section, Uint8Array>;
 
 export const REPORTS: Record<Section, { id: ReportId; length: number }> = {
 	polling: { id: ReportId.POLLING_RATE, length: ReportReadLength.POLLING_RATE },
 	dpi: { id: ReportId.DPI, length: ReportReadLength.DPI },
 	lighting: { id: ReportId.LIGHTING_SETTINGS, length: ReportReadLength.LIGHTING_SETTINGS },
+	buttons: { id: ReportId.BUTTON_MAPPING, length: ReportReadLength.BUTTON_MAPPING },
 };
+
+export const SECTIONS = Object.keys(REPORTS) as Section[];
 
 export const rgbToHex = (c: RGB) => '#' + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('');
 
@@ -85,6 +126,17 @@ export const clamp = (v: number, min: number, max: number) => Math.min(max, Math
 
 export const snapDpi = (v: number) => clamp(Math.round(v / DPI_STEP) * DPI_STEP, DPI_MIN, DPI_MAX);
 
+function sum(buf: Uint8Array, from: number, to: number) {
+	let s = 0;
+	for (let i = from; i <= to; i++) s += buf[i] ?? 0;
+	return s;
+}
+
+function writeBE16(buf: Uint8Array, at: number, v: number) {
+	buf[at] = (v >> 8) & 0xff;
+	buf[at + 1] = v & 0xff;
+}
+
 export function decodePolling(raw: Uint8Array): PollingRate {
 	return handleResponsePollingRate(raw) as PollingRate;
 }
@@ -94,6 +146,7 @@ export function decodeDpi(raw: Uint8Array): DpiSettings {
 	const mask = b.getActiveStages();
 	const values = b.getDpiValues();
 	const colors = b.getDpiColors();
+	const ind = raw[49] ?? DpiIndicator.Static;
 	return {
 		stages: Array.from({ length: STAGE_COUNT }, (_, i) => ({
 			enabled: Boolean(mask & (1 << i)),
@@ -103,6 +156,7 @@ export function decodeDpi(raw: Uint8Array): DpiSettings {
 		current: b.getCurrentStage(),
 		angleSnap: b.getAngleSnap(),
 		ripple: b.getRippleControl(),
+		indicator: ind >= 1 && ind <= 3 ? ind : DpiIndicator.Static,
 	};
 }
 
@@ -119,19 +173,31 @@ export function decodeLighting(raw: Uint8Array): LightingSettings {
 	};
 }
 
+export function decodeButtons(raw: Uint8Array): ButtonSettings {
+	if (raw[0] !== 0x08 || raw.length < 59) throw new Error('invalid button report');
+	if (sum(raw, 3, 56) !== ((raw[57]! << 8) | raw[58]!)) throw new Error('invalid button report checksum');
+	const out = {} as ButtonSettings;
+	for (const b of BUTTONS) {
+		const o = BUTTON_OFFSETS[b];
+		const action = raw[o]!;
+		out[b] = action === 0x00 ? { action: 0x01, mod: 0, code: 0 } : { action, mod: raw[o + 1]!, code: raw[o + 2]! };
+	}
+	return out;
+}
+
 export function decodeAll(raw: RawReports): Settings {
-	return { polling: decodePolling(raw.polling), dpi: decodeDpi(raw.dpi), lighting: decodeLighting(raw.lighting) };
+	return {
+		polling: decodePolling(raw.polling),
+		dpi: decodeDpi(raw.dpi),
+		lighting: decodeLighting(raw.lighting),
+		buttons: decodeButtons(raw.buttons),
+	};
 }
 
-export function encodePolling(rate: PollingRate, mode: ConnectionMode): Uint8Array {
-	return new PollingRateBuilder({ rate: rate as Rate }).build(mode);
-}
-
-function writeDpiChecksum(buf: Uint8Array) {
-	let sum = 0;
-	for (let i = 3; i <= 49; i++) sum += buf[i] ?? 0;
-	buf[50] = (sum >> 8) & 0xff;
-	buf[51] = sum & 0xff;
+export function encodePolling(rate: PollingRate, base: Uint8Array, mode: ConnectionMode): Uint8Array {
+	const b = new PollingRateBuilder({ rate: rate as Rate });
+	b.setProfileId((base[2] || 1) as 1);
+	return b.build(mode);
 }
 
 export function encodeDpi(s: DpiSettings, base: Uint8Array, mode: ConnectionMode): Uint8Array {
@@ -148,8 +214,8 @@ export function encodeDpi(s: DpiSettings, base: Uint8Array, mode: ConnectionMode
 	const full = new Uint8Array(Math.max(built.length, 52));
 	full.set(built);
 	full[7] = full[6]!;
-	full[49] = base[49]!;
-	writeDpiChecksum(full);
+	full[49] = s.indicator;
+	writeBE16(full, 50, sum(full, 3, 49));
 	return full.slice(0, built.length);
 }
 
@@ -165,9 +231,44 @@ export function encodeLighting(s: LightingSettings, base: Uint8Array, mode: Conn
 	return b.build(mode);
 }
 
+export function encodeButtons(s: ButtonSettings, base: Uint8Array): Uint8Array {
+	const out = new Uint8Array(59);
+	out.set(base.subarray(0, 59));
+	out[0] = 0x08;
+	out[1] = 0x3b;
+	out[2] = base[2] || 1;
+	for (const b of BUTTONS) {
+		const o = BUTTON_OFFSETS[b];
+		const v = s[b];
+		out[o] = v.action;
+		out[o + 1] = v.mod;
+		out[o + 2] = v.code;
+	}
+	writeBE16(out, 57, sum(out, 3, 56));
+	return out;
+}
+
+export function encodeSection(section: Section, s: Settings, raw: RawReports, mode: ConnectionMode): Uint8Array {
+	switch (section) {
+		case 'polling':
+			return encodePolling(s.polling, raw.polling, mode);
+		case 'dpi':
+			return encodeDpi(s.dpi, raw.dpi, mode);
+		case 'lighting':
+			return encodeLighting(s.lighting, raw.lighting, mode);
+		case 'buttons':
+			return encodeButtons(s.buttons, raw.buttons);
+	}
+}
+
 export function validateDpi(s: DpiSettings): string | null {
 	if (!s.stages.some((st) => st.enabled)) return 'dpi.errNoStage';
 	if (!s.stages[s.current - 1]?.enabled) return 'dpi.errActiveDisabled';
+	return null;
+}
+
+export function validateButtons(s: ButtonSettings): string | null {
+	if (!BUTTONS.some((b) => s[b].action === 0x02)) return 'buttons.errNoLeft';
 	return null;
 }
 

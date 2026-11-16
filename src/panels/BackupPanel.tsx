@@ -3,6 +3,7 @@ import { device } from '../device/useDevice';
 import { useI18n } from '../i18n';
 import { Panel } from '../components/ui';
 import { useApply } from './useApply';
+import { setPrefs } from '../store';
 
 export function BackupPanel({ deviceBusy }: { deviceBusy: boolean }) {
 	const { t } = useI18n();
@@ -39,7 +40,11 @@ export function BackupPanel({ deviceBusy }: { deviceBusy: boolean }) {
 					onChange={async (e) => {
 						const f = e.target.files?.[0];
 						e.target.value = '';
-						if (f) await run(async () => device.restoreBackup(await f.text()), 'backup.restored');
+						if (f)
+							await run(async () => {
+								const macros = await device.restoreBackup(await f.text());
+								if (macros?.length) setPrefs({ macros });
+							}, 'backup.restored');
 					}}
 				/>
 			</div>

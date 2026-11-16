@@ -1,22 +1,35 @@
 import type { MouseTransport, ReportId } from 'attack-shark-x11-driver';
 
 export const VENDOR_ID = 0x1d57;
-export const PRODUCT_IDS = { wired: 0xfa55, wireless: 0xfa60 } as const;
+export const PRODUCT_IDS = { wired: 0xfa55, wiredAlt: 0xfa61, wireless: 0xfa60 } as const;
+export const WIRED_PIDS: number[] = [PRODUCT_IDS.wired, PRODUCT_IDS.wiredAlt];
+const ALL_PIDS: number[] = [PRODUCT_IDS.wireless, ...WIRED_PIDS];
 const COMMAND_USAGE_PAGE = 0x0b;
 
-export const HID_FILTERS: HIDDeviceFilter[] = [
-	{ vendorId: VENDOR_ID, productId: PRODUCT_IDS.wireless, usagePage: COMMAND_USAGE_PAGE },
-	{ vendorId: VENDOR_ID, productId: PRODUCT_IDS.wired, usagePage: COMMAND_USAGE_PAGE },
-];
+export const HID_FILTERS: HIDDeviceFilter[] = ALL_PIDS.map((productId) => ({ vendorId: VENDOR_ID, productId, usagePage: COMMAND_USAGE_PAGE }));
 
-export type RawLog = (dir: 'tx' | 'rx' | 'in' | 'info' | 'err', msg: string) => void;
+const WRITABLE = new Set([0x04, 0x05, 0x06, 0x08, 0x09, 0x0c, 0xa0]);
+const READABLE = new Set([0x04, 0x05, 0x06, 0x08, 0x09, 0x0b, 0x0c, 0xa0]);
+const FORBIDDEN = 0x10;
+
+function guardSend(data: Uint8Array) {
+	const id = data[0] ?? -1;
+	if (id === FORBIDDEN || !WRITABLE.has(id)) throw new Error(`blocked write to report 0x${id.toString(16)}`);
+	if (id === 0xa0 && (data[1] === FORBIDDEN || !READABLE.has(data[1] ?? -1))) throw new Error(`blocked read request for report 0x${(data[1] ?? 0).toString(16)}`);
+}
+
+function guardRead(id: number) {
+	if (id === FORBIDDEN || !READABLE.has(id)) throw new Error(`blocked read of report 0x${id.toString(16)}`);
+}
+
+export type RawLog =(dir: 'tx' | 'rx' | 'in' | 'info' | 'err', msg: string) => void;
 
 export const toHex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
 
 function isCommandDevice(d: HIDDevice) {
 	return (
 		d.vendorId === VENDOR_ID &&
-		(d.productId === PRODUCT_IDS.wired || d.productId === PRODUCT_IDS.wireless) &&
+		ALL_PIDS.includes(d.productId) &&
 		d.collections.some((c) => c.usagePage === COMMAND_USAGE_PAGE)
 	);
 }
@@ -57,6 +70,7 @@ export class WebHidTransport implements MouseTransport {
 	}
 
 	async sendFeatureReport(data: Uint8Array): Promise<number> {
+		guardSend(data);
 		this.log('tx', toHex(data));
 		try {
 			await this.device.sendFeatureReport(data[0]!, data.slice(1));
@@ -68,6 +82,7 @@ export class WebHidTransport implements MouseTransport {
 	}
 
 	async getFeatureReport(reportId: ReportId, reportLength: number): Promise<Uint8Array> {
+		guardRead(reportId);
 		const view = await this.device.receiveFeatureReport(reportId);
 		const raw = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
 		this.log('rx', `[${raw.length}B raw] ${toHex(raw)}`);

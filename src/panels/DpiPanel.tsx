@@ -1,7 +1,7 @@
-import { DPI_MAX, DPI_MIN, DPI_STEP, snapDpi, validateDpi, type DpiSettings, type DpiStage } from '../device/codec';
+import { DPI_MAX, DPI_MIN, DPI_STEP, DpiIndicator, snapDpi, validateDpi, type DpiSettings, type DpiStage } from '../device/codec';
 import { device } from '../device/useDevice';
 import { useI18n } from '../i18n';
-import { ApplyBar, ColorInput, Panel, Toggle, useDraft } from '../components/ui';
+import { ApplyBar, ColorInput, Panel, Segmented, Toggle, useDraft } from '../components/ui';
 import { useApply } from './useApply';
 import { usePublishPreview } from '../device/preview';
 
@@ -44,13 +44,21 @@ export function DpiPanel({ dpi, deviceBusy }: { dpi: DpiSettings; deviceBusy: bo
 					})}
 				</div>
 			</Panel>
+			<Panel title={t('dpi.indicator')} hint={t('dpi.indicatorHint')}>
+				<Segmented<DpiIndicator>
+					label={t('dpi.indicator')}
+					value={draft.indicator}
+					options={[DpiIndicator.Blink, DpiIndicator.Static, DpiIndicator.Off].map((v) => ({ value: v, label: t(`dpi.indicator.${v}`) }))}
+					onChange={(indicator) => setDraft({ ...draft, indicator })}
+				/>
+			</Panel>
 			<Panel title={t('dpi.sensor')}>
 				<div className="toggles">
 					<Toggle label={t('dpi.angleSnap')} hint={t('dpi.angleSnapHint')} checked={draft.angleSnap} onChange={(angleSnap) => setDraft({ ...draft, angleSnap })} />
 					<Toggle label={t('dpi.ripple')} hint={t('dpi.rippleHint')} checked={draft.ripple} onChange={(ripple) => setDraft({ ...draft, ripple })} />
 				</div>
 			</Panel>
-			<ApplyBar dirty={dirty} busy={busy || deviceBusy} error={dirty && err ? t(err) : null} onApply={() => run(() => device.applyDpi({ ...draft, stages: draft.stages.map((s) => ({ ...s, value: snapDpi(s.value) })) }))} onReset={reset} />
+			<ApplyBar dirty={dirty} busy={busy || deviceBusy} error={dirty && err ? t(err) : null} onApply={() => run(() => device.applyDpi({ ...draft, stages: draft.stages.map((s) => ({ ...s, value: snapDpi(s.value) })) }))} onReset={reset} draftKey={JSON.stringify(draft)} />
 		</>
 	);
 }

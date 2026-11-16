@@ -26,7 +26,7 @@ export function PerformancePanel({ settings, deviceBusy }: { settings: Settings;
 			<Panel title={t('perf.debounce')} hint={t('perf.debounceHint')}>
 				<Slider label={t('perf.debounce')} value={draft.debounce} min={4} max={50} step={2} unit={t('unit.ms')} onChange={(debounce) => setDraft({ ...draft, debounce })} />
 			</Panel>
-			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={apply} onReset={reset} />
+			<ApplyBar dirty={dirty} busy={busy || deviceBusy} onApply={apply} onReset={reset} draftKey={JSON.stringify(draft)} />
 		</>
 	);
 }
