@@ -1,24 +1,18 @@
 import { useId } from 'react';
 import { LightMode, type Settings } from '../device/codec';
 
-const BODY = 'M260 190 Q263 145 294 119 L365 91 Q384 84 403 91 L474 119 Q505 145 508 190 L536 570 Q546 720 493 810 Q448 885 384 890 Q320 885 275 810 Q222 720 232 570 Z';
-const WIDEN = 1.38;
-const CX = 384;
-const widen = `translate(${CX} 0) scale(${WIDEN} 1) translate(${-CX} 0)`;
-const sideShift = `translate(${(250 - CX) * (WIDEN - 1)} 0)`;
-const VB_W = 470;
-const VB_H = 830;
+const BODY =
+	'M210 42C226 42 238 31 260 29C288 27 310 36 320 54C331 84 335 150 337 228C340 330 345 420 332 482C315 545 264 572 210 572C156 572 105 545 88 482C75 420 80 330 83 228C85 150 89 84 100 54C110 36 132 27 160 29C182 31 194 42 210 42Z';
+const VB = { x: 50, y: 12, w: 320, h: 600 };
 const LED_OFF = '#1b1e23';
 
 function ledState(settings?: Settings) {
-	if (!settings) return { color: '#23e9f2', anim: '' };
+	if (!settings) return { color: '#2ee6f2', anim: '' };
 	const { mode, color } = settings.lighting;
 	const dpi = settings.dpi.stages[settings.dpi.current - 1]?.color ?? color;
 	switch (mode) {
 		case LightMode.Off:
 			return { color: LED_OFF, anim: 'off' };
-		case LightMode.Static:
-			return { color, anim: '' };
 		case LightMode.Breathing:
 			return { color, anim: 'breathe' };
 		case LightMode.Neon:
@@ -44,77 +38,79 @@ export function MouseArt({ settings, size = 260 }: { settings?: Settings; size?:
 	const brightness = settings ? 0.35 + (settings.lighting.brightness / 8) * 0.65 : 1;
 
 	return (
-		<svg className="mouse-art" viewBox={`${CX - VB_W / 2} 74 ${VB_W} ${VB_H}`} width={(size * VB_W) / VB_H} height={size} role="img" aria-label="Mouse preview">
+		<svg className="mouse-art" viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} width={(size * VB.w) / VB.h} height={size} role="img" aria-label="Mouse preview">
 			<defs>
-				<linearGradient id={id('shell')} x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0" stopColor="#25272b" />
-					<stop offset=".38" stopColor="#111316" />
-					<stop offset=".72" stopColor="#191b1f" />
-					<stop offset="1" stopColor="#080a0d" />
+				<radialGradient id={id('palm')} cx="210" cy="330" r="210" gradientUnits="userSpaceOnUse">
+					<stop offset="0" stopColor="#2c2e33" />
+					<stop offset="0.45" stopColor="#1a1b1f" />
+					<stop offset="1" stopColor="#0c0d10" />
+				</radialGradient>
+				<linearGradient id={id('buttons')} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stopColor="#1d1e22" />
+					<stop offset="1" stopColor="#141518" />
 				</linearGradient>
-				<linearGradient id={id('button')} x1="0" y1="0" x2="0.15" y2="1">
-					<stop offset="0" stopColor="#17191d" />
-					<stop offset=".55" stopColor="#0d0f12" />
-					<stop offset="1" stopColor="#202226" />
+				<linearGradient id={id('rim')} x1="0" y1="0" x2="1" y2="0">
+					<stop offset="0" stopColor="#3a3d44" stopOpacity="0.9" />
+					<stop offset="0.12" stopColor="#3a3d44" stopOpacity="0" />
+					<stop offset="0.88" stopColor="#3a3d44" stopOpacity="0" />
+					<stop offset="1" stopColor="#3a3d44" stopOpacity="0.6" />
 				</linearGradient>
-				<linearGradient id={id('wheel')} x1="0" y1="0" x2="1" y2="0">
-					<stop offset="0" stopColor="#777d84" />
-					<stop offset=".22" stopColor="#262b31" />
-					<stop offset=".5" stopColor="#535a62" />
-					<stop offset=".8" stopColor="#252a30" />
-					<stop offset="1" stopColor="#a3a8ad" />
+				<linearGradient id={id('chrome')} x1="0" y1="0" x2="1" y2="0">
+					<stop offset="0" stopColor="#f2f3f5" />
+					<stop offset="0.18" stopColor="#8d9198" />
+					<stop offset="0.5" stopColor="#202226" />
+					<stop offset="0.82" stopColor="#8d9198" />
+					<stop offset="1" stopColor="#f2f3f5" />
 				</linearGradient>
 				<linearGradient id={id('side')} x1="0" y1="0" x2="1" y2="0">
-					<stop offset="0" stopColor="#090b0e" />
-					<stop offset=".5" stopColor="#34383e" />
-					<stop offset="1" stopColor="#101216" />
+					<stop offset="0" stopColor="#5a5e66" />
+					<stop offset="0.5" stopColor="#2a2c31" />
+					<stop offset="1" stopColor="#15161a" />
 				</linearGradient>
-				<filter id={id('glow')} filterUnits="userSpaceOnUse" x="330" y="450" width="108" height="70">
-					<feGaussianBlur stdDeviation="7" />
+				<filter id={id('floor')} filterUnits="userSpaceOnUse" x="0" y="420" width="420" height="240">
+					<feGaussianBlur stdDeviation="24" />
+				</filter>
+				<filter id={id('glow')} filterUnits="userSpaceOnUse" x="170" y="215" width="80" height="45">
+					<feGaussianBlur stdDeviation="5" />
 				</filter>
 				<clipPath id={id('body')}>
 					<path d={BODY} />
 				</clipPath>
 			</defs>
 
-			<g transform={widen}>
-				<path d={BODY} fill={url('shell')} stroke="#30343a" strokeWidth="2.2" vectorEffect="non-scaling-stroke" />
-				<path d="M260 190 Q255 350 250 540 Q240 705 285 790" fill="none" stroke="#454950" strokeOpacity=".42" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-				<path d="M508 190 Q520 390 526 570 Q535 710 486 790" fill="none" stroke="#05070a" strokeOpacity=".8" strokeWidth="5" vectorEffect="non-scaling-stroke" />
-				<g clipPath={url('body')}>
-					<path d="M232 442 Q384 453 536 442 L548 900 L220 900 Z" fill="#111317" opacity=".52" />
-					<path d="M444 466 Q500 520 507 630 Q514 727 474 806 Q462 829 444 837 Q471 766 466 670 Q462 566 414 486 Z" fill="#33363b" opacity=".35" />
-					<path d="M260 190 Q263 145 294 119 L365 91 L368 466 Q314 467 257 451 Z" fill={url('button')} stroke="#080a0d" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-					<path d="M403 91 L474 119 Q505 145 508 190 L511 451 Q455 467 400 466 Z" fill={url('button')} stroke="#080a0d" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-					<path d="M384 91 L384 467" stroke="#05070a" strokeWidth="3" opacity=".9" vectorEffect="non-scaling-stroke" />
-					<path d="M257 451 Q384 469 511 451" fill="none" stroke="#05070a" strokeWidth="5" vectorEffect="non-scaling-stroke" />
-					<path d="M260 448 Q384 464 508 448" fill="none" stroke="#3a3e44" strokeWidth="1" opacity=".35" vectorEffect="non-scaling-stroke" />
-				</g>
-				<path d="M260 190 Q263 145 294 119 L365 91" fill="none" stroke="#555a62" strokeOpacity=".28" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
-				<path d="M403 91 L474 119 Q505 145 508 190" fill="none" stroke="#555a62" strokeOpacity=".2" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
-				<path d="M232 570 Q222 720 275 810 Q320 885 384 890 Q448 885 493 810 Q546 720 536 570" fill="none" stroke="#454a52" strokeOpacity=".18" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+			<ellipse cx="210" cy="562" rx="150" ry="34" fill="#c9ced8" opacity="0.22" filter={url('floor')} />
+
+			<path d={BODY} fill={url('palm')} />
+
+			<g clipPath={url('body')}>
+				<path d="M60 20H360V220C300 226 120 226 60 220Z" fill={url('buttons')} />
+				<rect x="60" y="20" width="300" height="580" fill={url('rim')} />
+				<path d="M98 58C91 110 89 170 91 219M322 58C329 110 331 170 329 219" fill="none" stroke="#08090b" strokeWidth="2" opacity="0.9" />
+				<path d="M100 59C93 110 92 170 93 218M320 59C327 110 328 170 327 218" fill="none" stroke="#33363d" strokeWidth="1" opacity="0.5" />
+				<path d="M84 219C150 225 270 225 336 219" fill="none" stroke="#060708" strokeWidth="3" />
+				<path d="M86 222C150 228 270 228 334 222" fill="none" stroke="#34373e" strokeWidth="1" opacity="0.45" />
+				<path d="M210 132V220" stroke="#060708" strokeWidth="2.5" />
+				<path d="M188 42V66M232 42V66" stroke="#060708" strokeWidth="2" />
 			</g>
 
-			<path d="M365 152 Q365 137 380 134 L388 134 Q403 137 403 152 L403 245 Q403 263 384 265 Q365 263 365 245 Z" fill="#080a0d" stroke="#343940" strokeWidth="2" />
-			<rect x="370" y="143" width="28" height="112" rx="13" fill={url('wheel')} stroke="#858b92" strokeOpacity=".45" strokeWidth="1.2" />
-			<g stroke="#11151a" strokeWidth="2" opacity=".9" fill="none">
-				{[153, 163, 173, 183, 193, 203, 213, 223, 233].map((y) => (
-					<path key={y} d={`M372 ${y} Q384 ${y + 4} 396 ${y}`} />
+			<path d={BODY} fill="none" stroke="#2b2e35" strokeWidth="1.5" />
+
+			<rect x="186" y="60" width="48" height="76" rx="16" fill="#060708" />
+			<rect x="193" y="66" width="34" height="64" rx="12" fill={url('chrome')} />
+			<g stroke="#0a0b0d" strokeWidth="1.6" opacity="0.75">
+				{Array.from({ length: 11 }, (_, i) => 72 + i * 5).map((y) => (
+					<path key={y} d={`M195 ${y}H225`} />
 				))}
-				<path d="M375 243 Q384 246 393 243" />
 			</g>
-			<path d="M371 148 Q369 198 372 247" fill="none" stroke="#aeb4bb" strokeOpacity=".35" strokeWidth="1.2" />
+			<rect x="193" y="66" width="34" height="64" rx="12" fill="none" stroke="#000" strokeOpacity="0.6" strokeWidth="1.5" />
 
-			<g transform={sideShift}>
-				<path d="M252 381 Q245 384 244 398 L241 461 Q241 475 250 477 L257 474 L259 386 Z" fill={url('side')} stroke="#41464e" strokeWidth="1.5" />
-				<path d="M245 493 Q240 497 240 511 L238 590 Q238 604 248 607 L257 601 L258 497 Z" fill={url('side')} stroke="#41464e" strokeWidth="1.5" />
-				<path d="M247 397 L248 462 M244 510 L243 590" stroke="#6c737c" strokeOpacity=".22" strokeWidth="1.4" />
-			</g>
+			<rect x="72" y="150" width="13" height="64" rx="6.5" fill={url('side')} stroke="#0b0c0e" strokeWidth="1.2" />
+			<rect x="70" y="224" width="13" height="78" rx="6.5" fill={url('side')} stroke="#0b0c0e" strokeWidth="1.2" />
 
 			<g className={`led ${led.anim}`} style={{ '--speed': `${speed}s`, '--bright': brightness } as React.CSSProperties}>
-				{led.anim !== 'off' && <rect x="366" y="480" width="36" height="11" rx="5.5" fill={led.color} opacity=".6" filter={url('glow')} />}
-				<rect x="372" y="483" width="24" height="5.5" rx="2.75" fill={led.color} />
-				{led.anim !== 'off' && <rect x="375" y="484" width="18" height="2" rx="1" fill="#ffffff" opacity=".35" />}
+				{led.anim !== 'off' && <rect x="192" y="229" width="36" height="12" rx="6" fill={led.color} opacity="0.7" filter={url('glow')} />}
+				<rect x="199" y="232.5" width="22" height="5" rx="2.5" fill={led.color} />
+				{led.anim !== 'off' && <rect x="202" y="233.5" width="16" height="1.6" rx="0.8" fill="#ffffff" opacity="0.45" />}
 			</g>
 		</svg>
 	);
