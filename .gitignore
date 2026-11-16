@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.dump-tmp.mjs
+.dump-bundle.mjs
+.probe-tmp.mjs
+.write-tmp.mjs
+.write-bundle.mjs
