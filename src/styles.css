@@ -936,19 +936,23 @@ input[type='range']::-moz-range-thumb {
 	overflow: visible;
 }
 
-.mouse-art .underglow {
-	opacity: var(--bright, 0.6);
-	transition:
-		fill 0.3s,
-		opacity 0.3s;
+.mouse-art .led {
+	opacity: var(--bright, 1);
+	transition: opacity 0.3s;
 }
 
-.mouse-art.breathe .underglow {
+.mouse-art .led.breathe {
 	animation: breathe var(--speed, 2s) ease-in-out infinite;
 }
 
-.mouse-art.neon .underglow {
+.mouse-art .led.neon {
 	animation: hue var(--speed, 2s) linear infinite;
+}
+
+.mouse-art .led.neon.breathe {
+	animation:
+		hue var(--speed, 2s) linear infinite,
+		breathe var(--speed, 2s) ease-in-out infinite;
 }
 
 @keyframes breathe {

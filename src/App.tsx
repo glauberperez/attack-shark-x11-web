@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { device, useDevice } from './device/useDevice';
 import type { DeviceState } from './device/manager';
 import { useI18n, type Lang } from './i18n';
@@ -11,6 +11,8 @@ import { LightingPanel } from './panels/LightingPanel';
 import { PowerPanel } from './panels/PowerPanel';
 import { BackupPanel } from './panels/BackupPanel';
 import { LogPanel } from './panels/LogPanel';
+import { usePreview } from './device/preview';
+import type { Settings } from './device/codec';
 
 const UDEV = `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa60", TAG+="uaccess"
 KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa55", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-attack-shark-x11.rules
@@ -105,7 +107,7 @@ function Welcome({ s }: { s: DeviceState }) {
 	return (
 		<main className="welcome">
 			<div className="welcome-art">
-				<MouseArt size={420} />
+				<MouseArt size={400} />
 			</div>
 			<div className="welcome-body">
 				<h1>{t('hero.title')}</h1>
@@ -147,8 +149,13 @@ function Dashboard({ s }: { s: DeviceState }) {
 		return () => window.removeEventListener('hashchange', onHash);
 	}, []);
 
+	const preview = usePreview();
 	const settings = s.settings;
-	const stage = settings?.dpi.stages[settings.dpi.current - 1];
+	const shown: Settings | undefined = useMemo(
+		() => (settings ? { ...settings, dpi: preview.dpi ?? settings.dpi, lighting: { ...settings.lighting, ...preview.lighting } } : undefined),
+		[settings, preview],
+	);
+	const stage = shown?.dpi.stages[shown.dpi.current - 1];
 
 	return (
 		<div className="dash">
@@ -170,8 +177,8 @@ function Dashboard({ s }: { s: DeviceState }) {
 				{tab === 'log' && <LogPanel log={s.log} />}
 			</main>
 			<aside className="preview">
-				<MouseArt settings={settings} size={380} />
-				{settings && stage && (
+				<MouseArt settings={shown} size={360} />
+				{shown && stage && (
 					<div className="readout">
 						<div>
 							<small>DPI</small>
@@ -180,7 +187,7 @@ function Dashboard({ s }: { s: DeviceState }) {
 						<div>
 							<small>{t('perf.polling')}</small>
 							<strong>
-								{settings.polling}
+								{shown.polling}
 								<em> Hz</em>
 							</strong>
 						</div>

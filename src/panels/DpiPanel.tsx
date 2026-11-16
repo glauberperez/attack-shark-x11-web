@@ -3,11 +3,13 @@ import { device } from '../device/useDevice';
 import { useI18n } from '../i18n';
 import { ApplyBar, ColorInput, Panel, Toggle, useDraft } from '../components/ui';
 import { useApply } from './useApply';
+import { usePublishPreview } from '../device/preview';
 
 export function DpiPanel({ dpi, deviceBusy }: { dpi: DpiSettings; deviceBusy: boolean }) {
 	const { t } = useI18n();
 	const { draft, setDraft, dirty, reset } = useDraft(dpi);
 	const { busy, run } = useApply();
+	usePublishPreview('dpi', draft);
 	if (!draft) return null;
 
 	const err = validateDpi(draft);

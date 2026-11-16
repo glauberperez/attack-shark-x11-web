@@ -4,6 +4,7 @@ import { device } from '../device/useDevice';
 import { useI18n } from '../i18n';
 import { ApplyBar, Panel, Slider, useDraft } from '../components/ui';
 import { useApply } from './useApply';
+import { usePublishPreview } from '../device/preview';
 
 const MODES = [LightMode.Off, LightMode.Static, LightMode.Breathing, LightMode.Neon, LightMode.ColorBreathing, LightMode.StaticDpi, LightMode.BreathingDpi];
 const PRESETS = ['#ff2d55', '#ff7a00', '#ffd400', '#00e676', '#00e5ff', '#2f6bff', '#b04dff', '#ffffff'];
@@ -13,6 +14,7 @@ export function LightingPanel({ lighting, deviceBusy }: { lighting: LightingSett
 	const source = useMemo(() => ({ mode: lighting.mode, color: lighting.color, speed: lighting.speed, brightness: lighting.brightness }), [lighting]);
 	const { draft, setDraft, dirty, reset } = useDraft(source);
 	const { busy, run } = useApply();
+	usePublishPreview('lighting', draft);
 	if (!draft) return null;
 
 	const usesColor = draft.mode === LightMode.Static || draft.mode === LightMode.Breathing;
