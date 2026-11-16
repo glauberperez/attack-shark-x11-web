@@ -1,3 +1,5 @@
+if (location.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
+
 import { Buffer } from 'buffer';
 
 const g = globalThis as unknown as { Buffer?: typeof Buffer };

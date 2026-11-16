@@ -223,7 +223,7 @@ export function encodeDpi(s: DpiSettings, base: Uint8Array, mode: ConnectionMode
 	full[7] = full[6]!;
 	full[49] = s.indicator;
 	writeBE16(full, 50, sum(full, 3, 49));
-	return full.slice(0, built.length);
+	return full.slice(0, mode === ConnectionMode.Wired ? 52 : built.length);
 }
 
 export function encodeLighting(s: LightingSettings, base: Uint8Array, mode: ConnectionMode): Uint8Array {

@@ -206,7 +206,7 @@ class DeviceManager {
 			if (!raw || !this.driver) return;
 			void this.run(async () => {
 				try {
-					await this.driver!.sendCommand(REPORTS.lighting.id, raw.slice(0, raw[1] ?? raw.length), ACK_TIMEOUT);
+					await this.driver!.sendCommand(REPORTS.lighting.id, encodeSection('lighting', this.state.settings!, this.state.raw!, this.connectionMode), ACK_TIMEOUT);
 				} catch (e) {
 					this.log('info', `led restore: ${e}`);
 				}
@@ -412,10 +412,15 @@ class DeviceManager {
 			try {
 				const pages = encodeMacro(m, this.connectionMode);
 				const [first, second, last] = pages as [Uint8Array, Uint8Array, Uint8Array];
-				await this.driver.sendFeatureReport(first);
-				await sleep(80);
-				await this.driver.sendFeatureReport(second);
-				await sleep(80);
+				let sendError: unknown;
+				for (const page of [first, second]) {
+					try {
+						await this.driver.sendFeatureReport(page);
+					} catch (e) {
+						sendError ??= e;
+					}
+					await sleep(80);
+				}
 				let acked = false;
 				try {
 					acked = (await this.driver.sendCommand(0x09 as ReportId, last, ACK_TIMEOUT)) === 0;
@@ -423,6 +428,7 @@ class DeviceManager {
 					if (!(e instanceof TimeoutError)) throw e;
 					this.log('info', 'no ACK for macro, verifying by read-back');
 				}
+				if (sendError) throw sendError;
 				await sleep(150);
 				const head = await this.readRaw(0x09, 0x83, m.id);
 				if (!macroHeadMatches(head, first)) throw new Error(acked ? 'verifyMismatch' : 'writeFailed');

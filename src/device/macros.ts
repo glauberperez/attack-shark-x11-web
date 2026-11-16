@@ -59,7 +59,8 @@ export function encodeMacro(m: MacroDef, mode: ConnectionMode): Uint8Array[] {
 }
 
 export function macroHeadMatches(read: Uint8Array, firstPage: Uint8Array) {
-	for (let i = 3; i < Math.min(read.length, 64); i++) if (read[i] !== firstPage[i + 1]) return false;
+	const end = Math.min(read.length, firstPage.length - 1);
+	for (let i = 3; i < end; i++) if (read[i] !== firstPage[i + 1]) return false;
 	return true;
 }
 

@@ -20,19 +20,23 @@ It runs entirely in your browser through [WebHID](https://developer.mozilla.org/
 - Presets: create, overwrite, rename, apply, import and export full setups
 - Backup and restore of every setting, plus an automatic snapshot on connect
 - Optional auto-apply, low battery notification, and lighting restore after a DPI button press
-- Button tester, firmware version, onboard profile info, factory reset
+- Button tester, firmware version, onboard profile info, reset to the library's default values
 - Installable as an app (PWA) with offline support
 - English and Portuguese interface
 - Device log with raw HID traffic
 
 Every write is confirmed by reading the setting back from the mouse. Settings are stored in the mouse's onboard memory, so they keep working on any computer and OS.
 
-Tested on real hardware (firmware 1.09) over the 2.4 GHz receiver and the USB cable on Fedora Linux with Chrome. Macro writing is verified by read-back; playback has not been tested on a button yet.
+Tested on real hardware (firmware 1.09) on Fedora Linux:
+
+- In Chrome over the 2.4 GHz receiver: reading everything, writing polling, DPI, lighting and buttons, backup restore.
+- Over the USB cable with node-hid and the app's own encoders: DPI, polling, lighting, buttons and macro writes.
+- Not yet tested: WebHID over the cable, macro writes over the receiver, macro playback on a button, the low-battery notification, and the visual result of the experimental light modes.
 
 ## Requirements
 
 - A Chromium-based browser: Chrome, Edge, Brave, Opera, Vivaldi… (Firefox and Safari do not support WebHID).
-- 2.4 GHz receiver (`1d57:fa60`) or USB cable (`1d57:fa55`, some units `1d57:fa61`). Bluetooth is not supported.
+- 2.4 GHz receiver (`1d57:fa60`) or USB cable (`1d57:fa55`). Bluetooth is not supported.
 
 ### Linux: one-time permission
 
@@ -40,8 +44,7 @@ By default only root can open HID devices. Run once, then unplug and replug the 
 
 ```bash
 echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa60", TAG+="uaccess"
-KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa55", TAG+="uaccess"
-KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa61", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-attack-shark-x11.rules
+KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa55", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-attack-shark-x11.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
@@ -59,7 +62,8 @@ Differences from the library, found while testing on hardware:
 - DPI byte 49 (indicator mode) is preserved from the mouse instead of being reset to a default.
 - The command ACK sometimes never arrives, so writes are verified by reading the report back.
 - Button mapping (report `0x08`) reads back in the same slot order it is written on firmware 1.09; no slot permutation and no write-protected mode-key slot were observed.
-- Macros (report `0x09`) are acknowledged once, after the third page, not per page. Waiting for an ACK after page 0 and resending it leaves the firmware waiting for the rest of the macro and it rejects every other command until power-cycled.
+- Macros (report `0x09`) are acknowledged once, after the third page, not per page (observed over the cable). When only page 0 was sent, the mouse stopped answering configuration commands until it was plugged in again; the cause is not confirmed.
+- In wired mode the DPI report is 52 bytes (51 data bytes plus the id); the library cuts it to 51 and drops the low checksum byte.
 - WebHID can only read the first 64 bytes of a feature report, so macros are verified by their header and first actions; the full definitions are kept in the browser and in backup files.
 - Report `0x10` (bootloader) is blocked in the transport, along with any report id the app does not use.
 
@@ -67,10 +71,10 @@ Differences from the library, found while testing on hardware:
 
 Static analysis of the official installer (`ATTACKSHARKX11.zip` from attackshark.com, Inno Setup, DuiLib UI); nothing was executed.
 
-- The X11 is model `MS_4` internally, with device id `0x55` (`PID&0055`), wired PID `0xFA55` and receiver PID `0xFA60`. The `0xFA61` entry belongs to another model.
+- The X11 is model `MS_4` internally, with device id `0x55` (`PID&0055`), wired PID `0xFA55` and receiver PID `0xFA60`. The `0xFA61` wired PID that other projects list belongs to a different model (device id `0x40`).
 - The official UI for the X11 hides wake-up mode, lift-off distance, motion sync, scroll tilt and LED loop, so those are not offered here either.
 - Button actions come from a table that maps the UI items to slot bytes. Easy Aim is `10 00 03`, LED loop is `29 00 03`, and the shortcut items are keyboard actions (`11 mod key`), e.g. lock PC `11 08 0f`, screen capture `11 0a 16`.
-- Light modes are written as `mode << 4` in byte 3 with no remapping; the official list has 12 entries (off … breathing DPI, rainbow wave, lightning, static mixed color, marquee, marquee 2). The X11 firmware accepts and stores modes 7–11.
+- Light modes are written as `mode << 4` in byte 3 with no remapping; the official list has 12 entries (off … breathing DPI, rainbow wave, lightning, static mixed color, marquee, marquee 2). The X11 firmware accepts and stores modes 7–11, but it also stores 12, so acceptance does not prove the effects exist on this model.
 - Before a full apply, the official software writes profile settings `0c 0a 01 fe 01 fe` (current profile 1, one profile).
 
 ### Read-only probe of undocumented reports (firmware 1.09, wired)

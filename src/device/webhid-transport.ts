@@ -1,8 +1,8 @@
 import type { MouseTransport, ReportId } from 'attack-shark-x11-driver';
 
 export const VENDOR_ID = 0x1d57;
-export const PRODUCT_IDS = { wired: 0xfa55, wiredAlt: 0xfa61, wireless: 0xfa60 } as const;
-export const WIRED_PIDS: number[] = [PRODUCT_IDS.wired, PRODUCT_IDS.wiredAlt];
+export const PRODUCT_IDS = { wired: 0xfa55, wireless: 0xfa60 } as const;
+export const WIRED_PIDS: number[] = [PRODUCT_IDS.wired];
 const ALL_PIDS: number[] = [PRODUCT_IDS.wireless, ...WIRED_PIDS];
 const COMMAND_USAGE_PAGE = 0x0b;
 
