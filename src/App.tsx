@@ -105,7 +105,7 @@ function Welcome({ s }: { s: DeviceState }) {
 	return (
 		<main className="welcome">
 			<div className="welcome-art">
-				<MouseArt size={300} />
+				<MouseArt size={420} />
 			</div>
 			<div className="welcome-body">
 				<h1>{t('hero.title')}</h1>
@@ -170,7 +170,7 @@ function Dashboard({ s }: { s: DeviceState }) {
 				{tab === 'log' && <LogPanel log={s.log} />}
 			</main>
 			<aside className="preview">
-				<MouseArt settings={settings} size={280} />
+				<MouseArt settings={settings} size={380} />
 				{settings && stage && (
 					<div className="readout">
 						<div>
