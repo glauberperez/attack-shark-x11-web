@@ -9,18 +9,21 @@ It runs entirely in your browser through [WebHID](https://developer.mozilla.org/
 
 ## Features
 
-| Setting | Status |
-|---|---|
-| Polling rate (125 / 250 / 500 / 1000 Hz) | ✅ tested on hardware |
-| DPI stages (values, enabled stages, active stage, colors) | ✅ read verified, write via library |
-| Motion sync, angle snapping, ripple control, lift-off distance | ✅ read verified, write via library |
-| Lighting mode, color, speed, brightness | ✅ read verified, write via library |
-| Sleep / deep-sleep timers, debounce | ✅ read verified, write via library |
-| Battery level | ✅ when the mouse reports it |
-| Backup and restore of all settings (JSON file) | ✅ |
-| Button remapping and macros | ⏳ not yet |
+- Polling rate: 125 / 250 / 500 / 1000 Hz
+- DPI: up to 8 stages, 50 to 22000 DPI, active stage, per-stage indicator color
+- Sensor: angle snapping, ripple control
+- Lighting: off, static, breathing, neon, color breathing and DPI-color effects, color, brightness, speed
+- Power: sleep and deep-sleep timers, battery level
+- Click debounce
+- Backup and restore of every setting (JSON file), plus an automatic snapshot on connect
+- English and Portuguese interface
+- Device log with raw HID traffic for debugging
 
-Settings are saved to the mouse's onboard memory, so they keep working on every computer and OS.
+Every write is confirmed by reading the setting back from the mouse.
+
+Settings are stored in the mouse's onboard memory, so they keep working on any computer and OS.
+
+Tested on real hardware over the 2.4 GHz receiver on Fedora Linux with Chrome. Wired mode has not been tested yet. Button remapping and macros are not implemented.
 
 ## Requirements
 
@@ -42,14 +45,23 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 The USB protocol was reverse-engineered by
 [HarukaYamamoto0/attack-shark-x11-driver](https://github.com/HarukaYamamoto0/attack-shark-x11-driver) (MIT).
 This project reuses that library's packet builders and parsers and replaces its `node-hid` transport with a
-WebHID one (`src/webhid-transport.ts`), so the same protocol code runs in the browser.
+WebHID one (`src/device/webhid-transport.ts`), so the same protocol code runs in the browser.
+
+Differences from the library, found while testing on hardware:
+
+- DPI byte 7 is the Y-axis multiplier flag and must mirror byte 6; the library's builder clears it, which halves the
+  Y-axis DPI on stages above 12000. This app keeps both flags in sync.
+- DPI byte 49 (indicator mode) is preserved from the mouse instead of being reset to a default.
+- The command ACK sometimes never arrives, so writes are verified by reading the report back.
+
+The interface is React + TypeScript, built with Vite.
 
 ## Development
 
 ```bash
 npm install
-npm run dev     # http://localhost:5173
-npm run build   # static site in dist/
+npm run dev
+npm run build
 ```
 
 Every push to `main` is deployed to GitHub Pages by `.github/workflows/pages.yml`.
