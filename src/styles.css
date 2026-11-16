@@ -13,10 +13,6 @@
 	--ok: #3ddc84;
 	--warn: #ffb547;
 	--err: #ff5c6c;
-	--mouse-top: #2a3042;
-	--mouse-bottom: #151922;
-	--mouse-edge: #3a4359;
-	--mouse-wheel: #0f121a;
 	--radius: 14px;
 	color-scheme: dark;
 }
@@ -940,26 +936,19 @@ input[type='range']::-moz-range-thumb {
 	overflow: visible;
 }
 
-.mouse-art .glow,
-.mouse-art .strip {
-	opacity: var(--bright, 1);
+.mouse-art .underglow {
+	opacity: var(--bright, 0.6);
 	transition:
-		stroke 0.3s,
+		fill 0.3s,
 		opacity 0.3s;
 }
 
-.mouse-art.breathe .glow,
-.mouse-art.breathe .strip {
+.mouse-art.breathe .underglow {
 	animation: breathe var(--speed, 2s) ease-in-out infinite;
 }
 
-.mouse-art.neon .glow,
-.mouse-art.neon .strip {
+.mouse-art.neon .underglow {
 	animation: hue var(--speed, 2s) linear infinite;
-}
-
-.mouse-art .dpi-led {
-	filter: drop-shadow(0 0 4px currentColor);
 }
 
 @keyframes breathe {
