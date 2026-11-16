@@ -411,22 +411,21 @@ class DeviceManager {
 			this.set({ busy: true });
 			try {
 				const pages = encodeMacro(m, this.connectionMode);
-				for (const page of pages) {
-					let ok = false;
-					for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
-						try {
-							ok = (await this.driver.sendCommand(0x09 as ReportId, page, ACK_TIMEOUT)) === 0;
-						} catch (e) {
-							if (!(e instanceof TimeoutError)) throw e;
-							this.log('info', `no ACK for macro page ${page[3]}, attempt ${attempt}`);
-						}
-					}
-					if (!ok) throw new Error('writeFailed');
-					await sleep(60);
+				const [first, second, last] = pages as [Uint8Array, Uint8Array, Uint8Array];
+				await this.driver.sendFeatureReport(first);
+				await sleep(80);
+				await this.driver.sendFeatureReport(second);
+				await sleep(80);
+				let acked = false;
+				try {
+					acked = (await this.driver.sendCommand(0x09 as ReportId, last, ACK_TIMEOUT)) === 0;
+				} catch (e) {
+					if (!(e instanceof TimeoutError)) throw e;
+					this.log('info', 'no ACK for macro, verifying by read-back');
 				}
-				await sleep(120);
+				await sleep(150);
 				const head = await this.readRaw(0x09, 0x83, m.id);
-				if (!macroHeadMatches(head, pages[0]!)) throw new Error('verifyMismatch');
+				if (!macroHeadMatches(head, first)) throw new Error(acked ? 'verifyMismatch' : 'writeFailed');
 				const slots = (this.state.macroSlots ?? []).filter((s) => s.id !== m.id);
 				slots.push(decodeMacroHead(m.id, head));
 				slots.sort((a, b) => a.id - b.id);

@@ -19,7 +19,8 @@ import { usePreview } from './device/preview';
 import type { Settings } from './device/codec';
 
 const UDEV = `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa60", TAG+="uaccess"
-KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa55", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-attack-shark-x11.rules
+KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa55", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa61", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-attack-shark-x11.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger`;
 
 const REPO = 'https://github.com/glauberperez/attack-shark-x11-web';
