@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BUTTONS, DEFAULT_BUTTONS, validateButtons, type ButtonBinding, type ButtonSettings, type PhysicalButton } from '../device/codec';
-import { ACTIONS, CODE_TO_USAGE, DISABLED_ACTION, GROUPS, KEYBOARD_ACTION, KEY_OPTIONS, MACRO_ACTION, MODIFIERS, actionById, comboLabel, keyLabel } from '../device/actions';
+import { ACTIONS, CODE_TO_USAGE, DISABLED_ACTION, GROUPS, KEYBOARD_ACTION, KEY_OPTIONS, MACRO_ACTION, MODIFIERS, bindingFor, comboLabel, keyLabel, matchAction } from '../device/actions';
 import { MACRO_SLOTS } from '../device/macros';
 import { device } from '../device/useDevice';
 import { usePrefs } from '../store';
@@ -49,29 +49,27 @@ function KeyCapture({ value, onChange }: { value: ButtonBinding; onChange: (mod:
 function BindingEditor({ button, value, onChange }: { button: PhysicalButton; value: ButtonBinding; onChange: (v: ButtonBinding) => void }) {
 	const { t } = useI18n();
 	const prefs = usePrefs();
-	const known = actionById(value.action);
+	const idx = matchAction(value);
+	const isPreset = idx !== -1 && ACTIONS[idx]!.group === 'shortcuts';
 	return (
 		<div className="binding">
 			<label className="binding-label">{t(`btn.${button}`)}</label>
-			<select
-				value={known ? value.action : ''}
-				onChange={(e) => {
-					const action = Number(e.target.value);
-					onChange({ action, mod: 0, code: action === MACRO_ACTION ? 1 : 0 });
-				}}
-			>
-				{!known && <option value="">{`0x${value.action.toString(16)}`}</option>}
+			<select value={idx === -1 ? '' : idx} onChange={(e) => onChange(bindingFor(Number(e.target.value)))}>
+				{idx === -1 && <option value="">{`0x${value.action.toString(16)} ${value.mod.toString(16)} ${value.code.toString(16)}`}</option>}
 				{GROUPS.map((g) => (
 					<optgroup key={g} label={t(`group.${g}`)}>
-						{ACTIONS.filter((a) => a.group === g).map((a) => (
-							<option key={a.id} value={a.id}>
-								{t(`act.${a.key}`)}
-							</option>
-						))}
+						{ACTIONS.map((a, i) =>
+							a.group === g ? (
+								<option key={i} value={i}>
+									{t(`act.${a.key}`)}
+									{a.experimental ? ` (${t('common.experimental')})` : ''}
+								</option>
+							) : null,
+						)}
 					</optgroup>
 				))}
 			</select>
-			{value.action === KEYBOARD_ACTION && (
+			{value.action === KEYBOARD_ACTION && !isPreset && (
 				<div className="binding-extra">
 					<KeyCapture value={value} onChange={(mod, code) => onChange({ ...value, mod, code })} />
 					<div className="mods">

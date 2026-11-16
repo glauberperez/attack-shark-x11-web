@@ -752,6 +752,22 @@ input[type='range']::-moz-range-thumb {
 	animation: breathe 2.4s ease-in-out infinite;
 }
 
+.mode-7 .mode-dot,
+.mode-10 .mode-dot,
+.mode-11 .mode-dot {
+	background: conic-gradient(#ff2d55, #ffd400, #00e676, #00e5ff, #2f6bff, #b04dff, #ff2d55);
+	box-shadow: none;
+	animation: hue 2s linear infinite;
+}
+
+.mode-8 .mode-dot {
+	animation: flash 1.4s steps(1) infinite;
+}
+
+.mode-9 .mode-dot {
+	background: linear-gradient(90deg, var(--c) 0 50%, #ff2d55 50%);
+}
+
 .mode-5 .mode-dot,
 .mode-6 .mode-dot {
 	background: linear-gradient(135deg, #ff2d55 0 33%, #00e676 33% 66%, #2f6bff 66%);
@@ -943,6 +959,36 @@ input[type='range']::-moz-range-thumb {
 
 .mouse-art .led.breathe {
 	animation: breathe var(--speed, 2s) ease-in-out infinite;
+}
+
+.mouse-art .led.flash {
+	animation: flash var(--speed, 2s) steps(1) infinite;
+}
+
+@keyframes flash {
+	0%,
+	70% {
+		opacity: 0.1;
+	}
+	72%,
+	78% {
+		opacity: var(--bright, 1);
+	}
+	80%,
+	100% {
+		opacity: 0.1;
+	}
+}
+
+.exp {
+	margin-left: auto;
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--warn);
+	border: 1px solid rgba(255, 181, 71, 0.4);
+	border-radius: 999px;
+	padding: 1px 6px;
 }
 
 .mouse-art .led.neon {

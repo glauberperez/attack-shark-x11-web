@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { LightMode, type LightingSettings } from '../device/codec';
+import { EXPERIMENTAL_MODES, LightMode, type LightingSettings } from '../device/codec';
 import { device } from '../device/useDevice';
 import { useI18n } from '../i18n';
 import { ApplyBar, Panel, Slider, useDraft } from '../components/ui';
@@ -7,6 +7,7 @@ import { useApply } from './useApply';
 import { usePublishPreview } from '../device/preview';
 
 const MODES = [LightMode.Off, LightMode.Static, LightMode.Breathing, LightMode.Neon, LightMode.ColorBreathing, LightMode.StaticDpi, LightMode.BreathingDpi];
+const ALL_MODES = [...MODES, ...EXPERIMENTAL_MODES];
 const PRESETS = ['#ff2d55', '#ff7a00', '#ffd400', '#00e676', '#00e5ff', '#2f6bff', '#b04dff', '#ffffff'];
 
 export function LightingPanel({ lighting, deviceBusy }: { lighting: LightingSettings; deviceBusy: boolean }) {
@@ -17,20 +18,22 @@ export function LightingPanel({ lighting, deviceBusy }: { lighting: LightingSett
 	usePublishPreview('lighting', draft);
 	if (!draft) return null;
 
-	const usesColor = draft.mode === LightMode.Static || draft.mode === LightMode.Breathing;
+	const usesColor = draft.mode === LightMode.Static || draft.mode === LightMode.Breathing || draft.mode === LightMode.MixedStatic;
 	const animated = draft.mode !== LightMode.Off && draft.mode !== LightMode.Static && draft.mode !== LightMode.StaticDpi;
 
 	return (
 		<>
 			<Panel title={t('light.effect')}>
 				<div className="modes">
-					{MODES.map((m) => (
+					{ALL_MODES.map((m) => (
 						<button key={m} className={`mode mode-${m} ${draft.mode === m ? 'on' : ''}`} aria-pressed={draft.mode === m} onClick={() => setDraft({ ...draft, mode: m })} style={{ '--c': draft.color } as React.CSSProperties}>
 							<span className="mode-dot" />
 							{t(`light.mode.${m}`)}
+							{EXPERIMENTAL_MODES.includes(m) && <span className="exp">{t('common.experimental')}</span>}
 						</button>
 					))}
 				</div>
+				{EXPERIMENTAL_MODES.includes(draft.mode) && <p className="hint">{t('light.experimentalHint')}</p>}
 			</Panel>
 			{usesColor && (
 				<Panel title={t('light.color')}>

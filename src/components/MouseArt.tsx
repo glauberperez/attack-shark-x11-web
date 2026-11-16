@@ -23,6 +23,12 @@ function ledState(settings?: Settings) {
 			return { color: dpi, anim: '' };
 		case LightMode.BreathingDpi:
 			return { color: dpi, anim: 'breathe' };
+		case LightMode.RainbowWave:
+		case LightMode.Marquee:
+		case LightMode.Marquee2:
+			return { color: '#ff2d55', anim: 'neon' };
+		case LightMode.Lightning:
+			return { color, anim: 'flash' };
 		default:
 			return { color, anim: '' };
 	}

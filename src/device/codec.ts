@@ -48,7 +48,14 @@ export enum LightMode {
 	ColorBreathing = 4,
 	StaticDpi = 5,
 	BreathingDpi = 6,
+	RainbowWave = 7,
+	Lightning = 8,
+	MixedStatic = 9,
+	Marquee = 10,
+	Marquee2 = 11,
 }
+
+export const EXPERIMENTAL_MODES = [LightMode.RainbowWave, LightMode.Lightning, LightMode.MixedStatic, LightMode.Marquee, LightMode.Marquee2];
 
 export interface LightingSettings {
 	mode: LightMode;

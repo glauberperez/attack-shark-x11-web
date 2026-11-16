@@ -12,10 +12,10 @@ It runs entirely in your browser through [WebHID](https://developer.mozilla.org/
 - Polling rate: 125 / 250 / 500 / 1000 Hz
 - DPI: up to 8 stages, 50 to 22000 DPI, active stage, per-stage indicator color, indicator mode (blink / steady / off)
 - Sensor: angle snapping, ripple control
-- Lighting: off, static, breathing, neon, color breathing and DPI-color effects, color, brightness, speed, with a live preview
+- Lighting: off, static, breathing, neon, color breathing and DPI-color effects, color, brightness, speed, with a live preview; plus rainbow wave, lightning, mixed static, marquee and marquee 2 as experimental modes
 - Power: sleep and deep-sleep timers, battery level and charging state
 - Click debounce
-- Button remapping for all 8 inputs: mouse actions, keyboard keys and shortcuts with Ctrl/Shift/Alt/Win, macros, media, browser and system keys, DPI cycle / + / − / sniper, polling and lighting cycle, LED toggle
+- Button remapping for all 8 inputs: mouse actions, keyboard keys and shortcuts with Ctrl/Shift/Alt/Win, 19 ready-made shortcuts (copy, paste, undo, lock PC, show desktop, screen capture…), macros, media, browser and system keys, DPI cycle / + / −, Easy Aim, polling and lighting cycle, LED toggle, battery indicator (experimental)
 - Macro editor with a recorder (keys and mouse buttons), per-step delays, repeat N times / until key press / while held, 8 slots stored in the mouse
 - Presets: create, overwrite, rename, apply, import and export full setups
 - Backup and restore of every setting, plus an automatic snapshot on connect
@@ -62,6 +62,16 @@ Differences from the library, found while testing on hardware:
 - Macros (report `0x09`) are acknowledged once, after the third page, not per page. Waiting for an ACK after page 0 and resending it leaves the firmware waiting for the rest of the macro and it rejects every other command until power-cycled.
 - WebHID can only read the first 64 bytes of a feature report, so macros are verified by their header and first actions; the full definitions are kept in the browser and in backup files.
 - Report `0x10` (bootloader) is blocked in the transport, along with any report id the app does not use.
+
+### Findings from the official Windows software
+
+Static analysis of the official installer (`ATTACKSHARKX11.zip` from attackshark.com, Inno Setup, DuiLib UI); nothing was executed.
+
+- The X11 is model `MS_4` internally, with device id `0x55` (`PID&0055`), wired PID `0xFA55` and receiver PID `0xFA60`. The `0xFA61` entry belongs to another model.
+- The official UI for the X11 hides wake-up mode, lift-off distance, motion sync, scroll tilt and LED loop, so those are not offered here either.
+- Button actions come from a table that maps the UI items to slot bytes. Easy Aim is `10 00 03`, LED loop is `29 00 03`, and the shortcut items are keyboard actions (`11 mod key`), e.g. lock PC `11 08 0f`, screen capture `11 0a 16`.
+- Light modes are written as `mode << 4` in byte 3 with no remapping; the official list has 12 entries (off … breathing DPI, rainbow wave, lightning, static mixed color, marquee, marquee 2). The X11 firmware accepts and stores modes 7–11.
+- Before a full apply, the official software writes profile settings `0c 0a 01 fe 01 fe` (current profile 1, one profile).
 
 ### Read-only probe of undocumented reports (firmware 1.09, wired)
 

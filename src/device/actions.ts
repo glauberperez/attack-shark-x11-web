@@ -1,14 +1,19 @@
-export type ActionGroup = 'mouse' | 'dpi' | 'keyboard' | 'macro' | 'media' | 'browser' | 'system' | 'other';
+export type ActionGroup = 'mouse' | 'dpi' | 'keyboard' | 'shortcuts' | 'macro' | 'media' | 'browser' | 'system' | 'other';
 
 export interface ActionDef {
 	id: number;
 	key: string;
 	group: ActionGroup;
+	mod?: number;
+	code?: number;
+	experimental?: boolean;
 }
 
 export const KEYBOARD_ACTION = 0x11;
 export const MACRO_ACTION = 0x12;
 export const DISABLED_ACTION = 0x01;
+
+const shortcut = (key: string, mod: number, code: number): ActionDef => ({ id: KEYBOARD_ACTION, key, group: 'shortcuts', mod, code });
 
 export const ACTIONS: ActionDef[] = [
 	{ id: 0x02, key: 'leftClick', group: 'mouse' },
@@ -23,8 +28,27 @@ export const ACTIONS: ActionDef[] = [
 	{ id: 0x0d, key: 'dpiCycle', group: 'dpi' },
 	{ id: 0x0e, key: 'dpiUp', group: 'dpi' },
 	{ id: 0x0f, key: 'dpiDown', group: 'dpi' },
-	{ id: 0x10, key: 'sniper', group: 'dpi' },
+	{ id: 0x10, key: 'easyAim', group: 'dpi', code: 0x03 },
 	{ id: KEYBOARD_ACTION, key: 'keyboard', group: 'keyboard' },
+	shortcut('copy', 0x01, 0x06),
+	shortcut('cut', 0x01, 0x1b),
+	shortcut('paste', 0x01, 0x19),
+	shortcut('undo', 0x01, 0x1d),
+	shortcut('redo', 0x01, 0x1c),
+	shortcut('selectAll', 0x01, 0x04),
+	shortcut('find', 0x01, 0x09),
+	shortcut('save', 0x01, 0x16),
+	shortcut('open', 0x01, 0x12),
+	shortcut('newFile', 0x01, 0x11),
+	shortcut('print', 0x01, 0x13),
+	shortcut('zoomIn', 0x01, 0x2e),
+	shortcut('zoomOut', 0x01, 0x2d),
+	shortcut('closeWindow', 0x04, 0x3d),
+	shortcut('swapWindows', 0x04, 0x2b),
+	shortcut('showDesktop', 0x08, 0x07),
+	shortcut('runCommand', 0x08, 0x15),
+	shortcut('lockPc', 0x08, 0x0f),
+	shortcut('screenCapture', 0x0a, 0x16),
 	{ id: MACRO_ACTION, key: 'macro', group: 'macro' },
 	{ id: 0x15, key: 'mediaPlayer', group: 'media' },
 	{ id: 0x18, key: 'playPause', group: 'media' },
@@ -46,14 +70,27 @@ export const ACTIONS: ActionDef[] = [
 	{ id: 0x23, key: 'myComputer', group: 'system' },
 	{ id: 0x14, key: 'startMenu', group: 'system' },
 	{ id: 0x28, key: 'pollingCycle', group: 'other' },
-	{ id: 0x29, key: 'lightingCycle', group: 'other' },
+	{ id: 0x29, key: 'lightingCycle', group: 'other', code: 0x03 },
 	{ id: 0x30, key: 'ledToggle', group: 'other' },
+	{ id: 0x2b, key: 'showBattery', group: 'other', experimental: true },
 	{ id: DISABLED_ACTION, key: 'disabled', group: 'other' },
 ];
 
-export const GROUPS: ActionGroup[] = ['mouse', 'dpi', 'keyboard', 'macro', 'media', 'browser', 'system', 'other'];
+export const GROUPS: ActionGroup[] = ['mouse', 'dpi', 'keyboard', 'shortcuts', 'macro', 'media', 'browser', 'system', 'other'];
 
-export const actionById = (id: number) => ACTIONS.find((a) => a.id === id);
+export const actionById = (id: number) => ACTIONS.find((a) => a.id === id && a.group !== 'shortcuts');
+
+export function matchAction(b: { action: number; mod: number; code: number }): number {
+	const preset = ACTIONS.findIndex((a) => a.group === 'shortcuts' && a.id === b.action && a.mod === b.mod && a.code === b.code);
+	if (preset !== -1) return preset;
+	return ACTIONS.findIndex((a) => a.id === b.action && a.group !== 'shortcuts');
+}
+
+export function bindingFor(index: number) {
+	const a = ACTIONS[index]!;
+	if (a.id === MACRO_ACTION) return { action: a.id, mod: 0, code: 1 };
+	return { action: a.id, mod: a.mod ?? 0, code: a.code ?? 0 };
+}
 
 export const MODIFIERS = [
 	{ bit: 0x01, label: 'Ctrl' },
